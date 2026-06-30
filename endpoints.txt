@@ -1,0 +1,9 @@
+GET  /
+GET  /api/status
+POST /api/joinvc?chat_id=<chat_id>
+POST /api/leavevc
+POST /api/pause
+POST /api/resume
+POST /api/mute
+POST /api/unmute
+WS   /ws/transcription
