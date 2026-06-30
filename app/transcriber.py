@@ -208,7 +208,6 @@ class TranscriptionManager:
                 cmd_msg += f" | 🎵 Song: `{song}`"
             await self.pyrogram_app.send_message(self.chat_id, cmd_msg)
             
-            # Broadcast command event to WebSocket (Music bot can listen to this!)
             if self.ws_manager:
                 await self.ws_manager.broadcast_event("voice_command", {
                     "chat_id": self.chat_id,
@@ -216,9 +215,38 @@ class TranscriptionManager:
                     "song_name": song
                 })
 
-        # 4. Send the transcription to Telegram
-        await self.pyrogram_app.send_message(self.chat_id, f"🎙 {text}")
+        # 4. AI DJ Mode Check
+        dj = analysis.get("dj_recommendation")
+        if dj:
+            await self.pyrogram_app.send_message(
+                self.chat_id, 
+                f"🎧 **AI DJ Suggestion:** Based on the vibe, I recommend playing: `{dj}`"
+            )
+
+        # 5. Get Translation
+        translation = analysis.get("translated_text", "")
+        if translation and not analysis.get("is_abusive"):
+            # Send the transcription + translation to Telegram
+            await self.pyrogram_app.send_message(self.chat_id, f"🎙 {text}\n🌐 *{translation}*")
+        else:
+            await self.pyrogram_app.send_message(self.chat_id, f"🎙 {text}")
         
-        # 5. Broadcast final transcription to WebSocket
+        # 6. Broadcast final transcription to WebSocket (with translation)
         if self.ws_manager:
-            await self.ws_manager.broadcast_transcription(text, is_partial=False)
+            await self.ws_manager.broadcast_event("transcription", {
+                "text": text,
+                "translation": translation,
+                "is_partial": False
+            })
+            # To maintain compatibility with existing WS structure, we can also use broadcast_transcription
+            # but let's override the broadcast manually for the dashboard
+            import json
+            from datetime import datetime, timezone
+            message = json.dumps({
+                "type": "transcription",
+                "text": text,
+                "translation": translation,
+                "is_partial": False,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            })
+            await self.ws_manager._broadcast(message)

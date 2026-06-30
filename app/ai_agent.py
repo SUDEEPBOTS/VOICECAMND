@@ -35,11 +35,13 @@ async def analyze_text_with_ai(text: str) -> dict:
         return default_response
         
     prompt = f"""
-    You are an AI assistant listening to real-time voice chat transcriptions in a mix of Hindi and English.
-    Analyze the text and return a JSON object with three keys:
-    1. "is_abusive" (boolean): True if the text contains severe profanity, swear words, hate speech, or explicit abuse. False otherwise.
-    2. "voice_command" (string or null): If the text contains a clear command directed at a music bot (e.g., "play song", "skip", "pause", "stop", "volume up"), extract the core intent (e.g., "play", "pause", "skip", "stop"). Return null if it's just casual conversation.
-    3. "song_name" (string or null): If the voice_command is "play", extract the name of the song requested. Otherwise return null.
+    You are an AI assistant analyzing live voice chat transcriptions (mix of Hindi/English).
+    Analyze the text and return a JSON object with these exact keys:
+    1. "is_abusive" (boolean): True if toxic/abusive/profane.
+    2. "voice_command" (string or null): Core command ("play", "pause", "skip", "stop") if requested.
+    3. "song_name" (string or null): If command is play, extract the song.
+    4. "dj_recommendation" (string or null): If the text expresses a mood (e.g., "I'm sad", "let's party", "feeling chill"), recommend a song genre or vibe for the DJ. Else null.
+    5. "translated_text" (string): The English translation of the text (even if it's already in English, refine it).
 
     Text to analyze: "{text}"
     """

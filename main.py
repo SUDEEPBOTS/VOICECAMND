@@ -17,7 +17,8 @@ import os
 from contextlib import asynccontextmanager
 from typing import Annotated
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
+from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 from pydantic import BaseModel
@@ -126,6 +127,15 @@ async def root():
             "websocket": "WS /ws/transcription",
         },
     }
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def serve_dashboard():
+    """Serves the Live Web Dashboard."""
+    try:
+        with open("app/templates/dashboard.html", "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    except FileNotFoundError:
+        return HTMLResponse(content="<h1>Dashboard Template Not Found</h1>", status_code=404)
 
 
 @app.get("/api/status")

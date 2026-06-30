@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VoiceSraver | Live Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f172a;
+            --surface: rgba(30, 41, 59, 0.7);
+            --border: rgba(255, 255, 255, 0.1);
+            --accent: #38bdf8;
+            --text: #f8fafc;
+        }
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+        .panel {
+            background: var(--surface);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+        }
+        .transcript-box {
+            flex-grow: 1;
+            overflow-y: auto;
+            margin-top: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-right: 10px;
+        }
+        .message {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 14px 18px;
+            border-radius: 12px;
+            border-left: 4px solid var(--accent);
+            animation: fadeIn 0.4s ease-out forwards;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        .translation {
+            font-size: 0.85em;
+            color: #94a3b8;
+            margin-top: 6px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            padding-top: 6px;
+        }
+        @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
+        .controls h2 { margin-top: 0; }
+        .controls button {
+            background: var(--accent);
+            color: #0f172a;
+            border: none;
+            padding: 12px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            width: 100%;
+            margin-bottom: 12px;
+            transition: all 0.2s;
+        }
+        .controls button:hover { opacity: 0.85; transform: scale(0.98); }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: rgba(0,0,0,0.3);
+            color: white;
+            box-sizing: border-box;
+            margin-bottom: 12px;
+            font-family: inherit;
+        }
+        input::placeholder { color: #64748b; }
+        .event-msg { font-size: 0.8em; color: var(--accent); font-style: italic; }
+    </style>
+</head>
+<body>
+    <div class="panel">
+        <h2 style="margin-top:0;">🎙️ Live Transcription</h2>
+        <div class="transcript-box" id="transcript">
+            <div class="message">Waiting for voice chat audio...</div>
+        </div>
+    </div>
+    <div class="panel controls">
+        <h2>⚙️ Controls</h2>
+        <input type="text" id="chatId" placeholder="Chat ID (e.g. -100123456)">
+        
+        <input type="text" id="ttsText" placeholder="Type here for Bot to speak...">
+        <button onclick="speak()">🗣️ Send Voice Note (TTS)</button>
+
+        <button style="background: #ef4444;" onclick="action('/api/pause', true)">⏸ Pause Transcription</button>
+        <button style="background: #22c55e;" onclick="action('/api/resume', true)">▶ Resume Transcription</button>
+        <button style="background: #8b5cf6;" onclick="getSummary()">📝 Generate AI Summary</button>
+        <button style="background: #f59e0b;" onclick="window.open('/api/transcript/download?chat_id=' + document.getElementById('chatId').value)">📥 Download Transcript</button>
+        
+        <div id="summaryBox" style="margin-top:20px; font-size: 0.9em; color: #cbd5e1; white-space: pre-wrap;"></div>
+    </div>
+
+    <script>
+        const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const ws = new WebSocket(`${wsProtocol}//${location.host}/ws/transcription`);
+        
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            const box = document.getElementById('transcript');
+            
+            if (data.type === 'transcription' && !data.is_partial) {
+                box.innerHTML += `<div class="message">
+                    <div>${data.text}</div>
+                    ${data.translation ? `<div class="translation">🇬🇧 ${data.translation}</div>` : ''}
+                </div>`;
+            } else if (data.type === 'event') {
+                box.innerHTML += `<div class="message event-msg">⚡ Event: ${data.event}</div>`;
+            }
+            box.scrollTop = box.scrollHeight;
+        };
+
+        async function action(endpoint, isPost = false) {
+            const chatId = document.getElementById('chatId').value;
+            if(!chatId) return alert('Please enter a Chat ID first');
+            
+            const req = { method: isPost ? 'POST' : 'GET', headers: {'Content-Type': 'application/json'} };
+            if (isPost) req.body = JSON.stringify({ chat_id: parseInt(chatId) });
+            
+            try {
+                const res = await fetch(isPost ? endpoint : `${endpoint}?chat_id=${chatId}`, req);
+                const data = await res.json();
+                console.log(data);
+            } catch(e) {
+                alert("Error calling API");
+            }
+        }
+
+        async function speak() {
+            const chatId = document.getElementById('chatId').value;
+            const text = document.getElementById('ttsText').value;
+            if(!chatId || !text) return alert('Enter Chat ID and Text');
+            
+            await fetch('/api/speak', { 
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify({chat_id: parseInt(chatId), text: text}) 
+            });
+            document.getElementById('ttsText').value = '';
+        }
+
+        async function getSummary() {
+            const chatId = document.getElementById('chatId').value;
+            if(!chatId) return alert('Please enter a Chat ID');
+            document.getElementById('summaryBox').innerText = "Summarizing... (Please wait)";
+            
+            const res = await fetch(`/api/summary?chat_id=${chatId}`);
+            const data = await res.json();
+            document.getElementById('summaryBox').innerText = data.summary || data.error || "No summary available.";
+        }
+    </script>
+</body>
+</html>
