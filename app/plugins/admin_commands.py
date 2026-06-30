@@ -57,17 +57,18 @@ def setup_admin_commands(app: Client, vc_manager: VCManager):
         model_exists = Path(config.VOSK_MODEL_PATH).exists()
         me = await client.get_me()
 
+        loaded_msg = "✅ Loaded" if model_exists else "❌ Not found"
         await message.reply(
-            "\ud83e\udd16 **VoiceSraver is Alive!**\n\n"
-            f"\ud83d\udcbb Version: `{__version__}`\n"
-            f"\ud83d\udc64 Account: {me.first_name} (@{me.username})\n"
-            f"\u23f1 Uptime: `{_format_uptime(uptime)}`\n"
-            f"\ud83e\udde0 Model: {'\u2705 Loaded' if model_exists else '\u274c Not found'}\n"
-            f"\ud83d\udce1 VC Active: {'Yes' if vc_manager.is_active else 'No'}\n"
-            f"\ud83d\udd12 Admins: {len(config.ADMIN_IDS) if config.ADMIN_IDS else 'All'}"
+            "🤖 **VoiceSraver is Alive!**\n\n"
+            f"💻 Version: `{__version__}`\n"
+            f"👤 Account: {me.first_name} (@{me.username})\n"
+            f"⏱ Uptime: `{_format_uptime(uptime)}`\n"
+            f"🧠 Model: {loaded_msg}\n"
+            f"📡 VC Active: {'Yes' if vc_manager.is_active else 'No'}\n"
+            f"🔒 Admins: {len(config.ADMIN_IDS) if config.ADMIN_IDS else 'All'}"
         )
 
-    @app.on_message(filters.command("restart") & (filters.group | filters.supergroup))
+    @app.on_message(filters.command("restart") & filters.group)
     async def cmd_restart(client: Client, message: Message):
         user_id = message.from_user.id if message.from_user else 0
         if not _is_admin(user_id):

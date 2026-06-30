@@ -23,7 +23,7 @@ def _is_admin(user_id: int) -> bool:
 def setup_vc_commands(app: Client, vc_manager: VCManager):
     """Register VC command handlers on the Pyrogram client."""
 
-    @app.on_message(filters.command("joinvc") & (filters.group | filters.supergroup))
+    @app.on_message(filters.command("joinvc") & filters.group)
     async def cmd_joinvc(client: Client, message: Message):
         user_id = message.from_user.id if message.from_user else 0
         if not _is_admin(user_id):
@@ -57,7 +57,7 @@ def setup_vc_commands(app: Client, vc_manager: VCManager):
             logger.error(f"Join VC error: {e}", exc_info=True)
             await status_msg.edit_text(f"\u274c Failed to join VC:\n`{e}`")
 
-    @app.on_message(filters.command("leavevc") & (filters.group | filters.supergroup))
+    @app.on_message(filters.command("leavevc") & filters.group)
     async def cmd_leavevc(client: Client, message: Message):
         user_id = message.from_user.id if message.from_user else 0
         if not _is_admin(user_id):
@@ -83,14 +83,16 @@ def setup_vc_commands(app: Client, vc_manager: VCManager):
     async def cmd_vcstatus(client: Client, message: Message):
         status = vc_manager.get_status()
         if status["is_active"]:
+            yes_emoji = "Yes ✅"
+            no_emoji = "No ❌"
             await message.reply(
-                "\ud83d\udcca **VoiceSraver Status**\n\n"
-                f"\ud83d\udfe2 State: Active\n"
-                f"\ud83d\udccd Chat: `{status['chat_id']}`\n"
-                f"\ud83d\udd17 VC Connected: {'Yes' if status['is_connected'] else 'No'}\n"
-                f"\ud83c\udf99 Transcribing: {'Yes \u2705' if status['is_transcribing'] else 'No \u274c'}\n"
-                f"\ud83d\udce6 Audio Queue: {status['audio_queue_size']}/{status['audio_queue_max']}\n"
-                f"\ud83d\udcdd Model: `{status['model_path']}`"
+                "📊 **VoiceSraver Status**\n\n"
+                f"🟢 State: Active\n"
+                f"📍 Chat: `{status['chat_id']}`\n"
+                f"🔗 VC Connected: {'Yes' if status['is_connected'] else 'No'}\n"
+                f"🎙 Transcribing: {yes_emoji if status['is_transcribing'] else no_emoji}\n"
+                f"📦 Audio Queue: {status['audio_queue_size']}/{status['audio_queue_max']}\n"
+                f"📝 Model: `{status['model_path']}`"
             )
         else:
             await message.reply(

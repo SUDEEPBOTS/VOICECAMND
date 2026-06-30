@@ -41,6 +41,9 @@ class MuteRequest(BaseModel):
     chat_id: int
     mute: bool
 
+class JoinGroupRequest(BaseModel):
+    invite_link: str
+
 # Logging
 logging.basicConfig(
     level=getattr(config, "LOG_LEVEL", "INFO"),
@@ -118,12 +121,15 @@ async def root():
         "status": "running",
         "endpoints": {
             "status": "GET /api/status",
+            "join_group": "POST /api/join_group",
             "join_vc": "POST /api/joinvc?chat_id=xxx",
             "leave_vc": "POST /api/leavevc",
             "pause": "POST /api/pause",
             "resume": "POST /api/resume",
             "mute": "POST /api/mute",
             "unmute": "POST /api/unmute",
+            "speak": "POST /api/speak",
+            "summary": "GET /api/summary?chat_id=xxx",
             "websocket": "WS /ws/transcription",
         },
     }
@@ -147,12 +153,31 @@ async def api_status():
     return status
 
 
+@app.post("/api/join_group")
+async def api_join_group(req: JoinGroupRequest):
+    """Make the userbot join a group via invite link."""
+    if pyrogram_app is None:
+        raise HTTPException(503, "Bot not initialized")
+    try:
+        chat = await pyrogram_app.join_chat(req.invite_link)
+        return {"status": "success", "chat_id": chat.id, "title": chat.title}
+    except Exception as e:
+        raise HTTPException(400, f"Failed to join group: {e}")
+
+
 @app.post("/api/joinvc")
 async def api_joinvc(chat_id: int):
-    if vc_manager is None:
+    if vc_manager is None or pyrogram_app is None:
         raise HTTPException(503, "Bot not initialized")
     if vc_manager.is_active:
         raise HTTPException(409, f"Already in chat {vc_manager.active_chat_id}")
+        
+    # Check if bot is actually in the group
+    try:
+        await pyrogram_app.get_chat(chat_id)
+    except Exception as e:
+        raise HTTPException(400, f"Bot is not in the group or chat_id is invalid: {e}")
+
     try:
         loop = asyncio.get_event_loop()
         await vc_manager.join(chat_id, loop)
@@ -220,6 +245,71 @@ async def api_unmute():
         return {"status": "unmuted"}
     except Exception as e:
         raise HTTPException(500, str(e))
+
+
+@app.post("/api/speak")
+async def api_speak(req: SpeakRequest):
+    """Generates Text-to-Speech and sends it as a voice note to the chat."""
+    if not vc_manager.is_active or vc_manager.active_chat_id != req.chat_id:
+        raise HTTPException(400, "Bot is not active in this chat.")
+    try:
+        tts = gTTS(text=req.text, lang='hi')
+        file_path = f"tts_{req.chat_id}.mp3"
+        tts.save(file_path)
+        await pyrogram_app.send_voice(req.chat_id, voice=file_path, caption="🗣️ **VoiceSraver TTS**")
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        return {"status": "success", "message": "Voice note sent!"}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.get("/api/summary")
+async def api_summary(chat_id: int):
+    """Generates an AI summary of the current VC transcript."""
+    if not vc_manager.is_active or vc_manager.active_chat_id != chat_id:
+        raise HTTPException(400, "Bot is not active in this chat.")
+    if not vc_manager.transcription_manager:
+        raise HTTPException(400, "Transcription manager not initialized.")
+        
+    history = vc_manager.transcription_manager.transcript_history
+    if not history:
+        return {"summary": "No transcription data available yet."}
+        
+    from app.ai_agent import summarize_chat
+    summary = await summarize_chat(history)
+    return {"status": "success", "summary": summary}
+
+@app.get("/api/participants")
+async def api_participants(chat_id: int):
+    """Returns the list of participants currently in the VC."""
+    if not vc_manager.is_active or vc_manager.active_chat_id != chat_id:
+        raise HTTPException(400, "Bot is not active in this chat.")
+    try:
+        participants = await vc_manager.group_call_factory.get_participants(chat_id)
+        data = [{"user_id": getattr(p, 'user_id', 'Unknown'), "muted": getattr(p, 'muted', False), "volume": getattr(p, 'volume', 0)} for p in participants]
+        return {"status": "success", "participants_count": len(data), "participants": data}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.get("/api/transcript/download")
+async def api_transcript_download(chat_id: int):
+    """Downloads the full transcription history as a .txt file."""
+    if not vc_manager.is_active or vc_manager.active_chat_id != chat_id:
+        raise HTTPException(400, "Bot is not active in this chat.")
+    if not vc_manager.transcription_manager:
+        raise HTTPException(400, "Transcription manager not initialized.")
+        
+    history = vc_manager.transcription_manager.transcript_history
+    if not history:
+        raise HTTPException(404, "No transcription data available.")
+        
+    file_path = f"transcript_{chat_id}.txt"
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write("=== VoiceSraver VC Transcript ===\n\n")
+        for line in history:
+            f.write(f"- {line}\n")
+            
+    return FileResponse(path=file_path, filename=f"VC_Transcript_{chat_id}.txt", media_type="text/plain", background=None)
 
 
 # ====== WebSocket ======

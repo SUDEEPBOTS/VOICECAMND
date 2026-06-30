@@ -6,6 +6,7 @@ POST /api/pause
 POST /api/resume
 POST /api/mute
 POST /api/unmute
+POST /api/join_group
 POST /api/speak
 GET  /api/summary?chat_id=<chat_id>
 GET  /api/participants?chat_id=<chat_id>
