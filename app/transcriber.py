@@ -193,21 +193,17 @@ class TranscriptionManager:
         
         # 2. Moderation check
         if analysis.get("is_abusive"):
-            await self.pyrogram_app.send_message(
-                self.chat_id, 
-                "⚠️ **Warning:** Abusive language detected! Please maintain decorum."
-            )
             text = "[CENSORED BY AI MODERATOR]"
+            if self.ws_manager:
+                await self.ws_manager.broadcast_event("moderation_alert", {
+                    "chat_id": self.chat_id,
+                    "reason": "Abusive language detected"
+                })
             
         # 3. Voice Commands check
         command = analysis.get("voice_command")
         if command:
             song = analysis.get("song_name")
-            cmd_msg = f"🤖 **AI Command Detected:** `{command}`"
-            if song:
-                cmd_msg += f" | 🎵 Song: `{song}`"
-            await self.pyrogram_app.send_message(self.chat_id, cmd_msg)
-            
             if self.ws_manager:
                 await self.ws_manager.broadcast_event("voice_command", {
                     "chat_id": self.chat_id,
@@ -218,18 +214,14 @@ class TranscriptionManager:
         # 4. AI DJ Mode Check
         dj = analysis.get("dj_recommendation")
         if dj:
-            await self.pyrogram_app.send_message(
-                self.chat_id, 
-                f"🎧 **AI DJ Suggestion:** Based on the vibe, I recommend playing: `{dj}`"
-            )
+            if self.ws_manager:
+                await self.ws_manager.broadcast_event("dj_recommendation", {
+                    "chat_id": self.chat_id,
+                    "recommendation": dj
+                })
 
         # 5. Get Translation
         translation = analysis.get("translated_text", "")
-        if translation and not analysis.get("is_abusive"):
-            # Send the transcription + translation to Telegram
-            await self.pyrogram_app.send_message(self.chat_id, f"🎙 {text}\n🌐 *{translation}*")
-        else:
-            await self.pyrogram_app.send_message(self.chat_id, f"🎙 {text}")
         
         # 6. Broadcast final transcription to WebSocket (with translation)
         if self.ws_manager:
