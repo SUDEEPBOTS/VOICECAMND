@@ -1,0 +1,24 @@
+# Telegram MTProto Client
+pyrogram==2.0.106
+tgcrypto==1.2.5
+
+# Voice Chat (MarshalX pytgcalls with GroupCallRaw)
+pytgcalls==3.0.0.dev24
+tgcalls==3.0.0.dev7
+
+# Speech-to-Text (offline, lightweight)
+vosk==0.3.45
+
+# Audio processing
+numpy==1.26.4
+
+# Web Framework (API + WebSocket)
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+websockets==14.1
+
+# AI and Moderation
+google-generativeai==0.8.3
+
+# Environment variables
+python-dotenv==1.0.1

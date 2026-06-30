@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  voicesraver:
+    build: .
+    container_name: voicesraver_bot
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      # Ensure you have created a .env file with these variables
+      - API_ID=${API_ID}
+      - API_HASH=${API_HASH}
+      - STRING_SESSION=${STRING_SESSION}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - ADMIN_IDS=${ADMIN_IDS}
+      - VOSK_MODEL_PATH=/app/model
+      - FASTAPI_HOST=0.0.0.0
+      - FASTAPI_PORT=8000
+      - LOG_LEVEL=INFO
+    # Optional: Mount a local model directory if you downloaded a large model manually
+    # volumes:
+    #   - ./model:/app/model
