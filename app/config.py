@@ -19,7 +19,7 @@ API_HASH = os.getenv("API_HASH", "your_api_hash_here")
 STRING_SESSION = os.getenv("STRING_SESSION", "")
 
 # --- AI & Moderation ---
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+OPENCODE_API_KEY = os.getenv("OPENCODE_API_KEY", "")
 
 # --- Session fallback (file-based, for local dev) ---
 SESSION_NAME = os.getenv("SESSION_NAME", "voicesraver")

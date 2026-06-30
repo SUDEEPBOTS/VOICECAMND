@@ -13,7 +13,7 @@ services:
         sync: false
       - key: STRING_SESSION
         sync: false
-      - key: GEMINI_API_KEY
+      - key: OPENCODE_API_KEY
         sync: false
       - key: ADMIN_IDS
         sync: false
