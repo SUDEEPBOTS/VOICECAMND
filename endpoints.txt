@@ -11,3 +11,4 @@ GET  /api/summary?chat_id=<chat_id>
 GET  /api/participants?chat_id=<chat_id>
 GET  /api/transcript/download?chat_id=<chat_id>
 WS   /ws/transcription
+GET  /dashboard
