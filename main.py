@@ -25,6 +25,7 @@ import uvicorn
 from app import config
 from app.bot import create_bot
 from app.ws_manager import WSManager
+from keep_alive import start_keep_alive
 
 # Logging
 logging.basicConfig(
@@ -53,6 +54,9 @@ async def lifespan(app: FastAPI):
     logger.info("=" * 50)
     logger.info("  🎙 VoiceSraver Starting...")
     logger.info("=" * 50)
+
+    # Start 24/7 Keep Alive thread
+    start_keep_alive()
 
     pyrogram_app, vc_manager = create_bot(ws_manager)
 

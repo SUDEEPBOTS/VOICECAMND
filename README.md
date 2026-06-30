@@ -46,9 +46,18 @@ graph TD;
     Emit --> TG;
 ```
 
+## 🚀 1-Click Deployment (Free 24/7)
+
+Deploy instantly on Heroku or Render. The bot includes an internal **24/7 keep-alive trick** so it never sleeps on free tiers! *(Just set the `PING_URL` environment variable to your app's public URL in the dashboard).*
+
+<p align="left">
+  <a href="https://heroku.com/deploy?template=https://github.com/SUDEEPBOTS/VOICECAMND"><img src="https://www.herokucdn.com/deploy/button.svg" alt="Deploy to Heroku"></a>
+  <a href="https://render.com/deploy?repo=https://github.com/SUDEEPBOTS/VOICECAMND"><img src="https://render.com/images/deploy-to-render-button.svg" alt="Deploy to Render"></a>
+</p>
+
 ---
 
-## 🚀 Quick Setup (Docker - Recommended)
+## 🐳 Quick Setup (Docker - Recommended)
 
 The easiest way to run the bot is using Docker. It automatically handles `ffmpeg` and dependencies.
 
