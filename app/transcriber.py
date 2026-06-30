@@ -66,6 +66,9 @@ class TranscriptionManager:
         # Message batching
         self._message_buffer: list[str] = []
         self._last_send_time: float = 0
+        
+        # History for AI Summaries and Downloading
+        self.transcript_history: list[str] = []
 
     def start(self):
         """Start the transcription worker thread."""
@@ -184,6 +187,9 @@ class TranscriptionManager:
         
         # 1. Ask AI for moderation and commands
         analysis = await analyze_text_with_ai(text)
+        
+        # Store in history
+        self.transcript_history.append(text)
         
         # 2. Moderation check
         if analysis.get("is_abusive"):

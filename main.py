@@ -13,23 +13,36 @@ Endpoints:
 import asyncio
 import logging
 import sys
+import os
 from contextlib import asynccontextmanager
+from typing import Annotated
+
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, FileResponse
+from pydantic import BaseModel
+from gtts import gTTS
+import uvicorn
 
 from dotenv import load_dotenv
 load_dotenv()
-
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-import uvicorn
 
 from app import config
 from app.bot import create_bot
 from app.ws_manager import WSManager
 from keep_alive import start_keep_alive
 
+class SpeakRequest(BaseModel):
+    chat_id: int
+    text: str
+
+class MuteRequest(BaseModel):
+    chat_id: int
+    mute: bool
+
 # Logging
 logging.basicConfig(
-    level=getattr(logging, config.LOG_LEVEL, logging.INFO),
+    level=getattr(config, "LOG_LEVEL", "INFO"),
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )

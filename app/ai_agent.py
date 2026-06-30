@@ -51,3 +51,31 @@ async def analyze_text_with_ai(text: str) -> dict:
     except Exception as e:
         logger.error(f"AI Analysis Error: {e}")
         return default_response
+
+
+async def summarize_chat(history: list[str]) -> str:
+    """
+    Takes a list of transcribed sentences and returns a concise meeting summary.
+    """
+    if not model or not history:
+        return "AI is disabled or chat history is empty."
+    
+    full_text = "\n".join(history)
+    prompt = f"""
+    You are an AI meeting assistant. Below is the transcript of a voice chat.
+    Please provide a concise, bullet-pointed summary of the key topics discussed, 
+    important decisions made, or main themes of the conversation. 
+    Keep it clear and professional.
+
+    Transcript:
+    {full_text}
+    """
+    
+    try:
+        # Override response type just for this call to get plain text
+        summary_model = genai.GenerativeModel('gemini-1.5-flash')
+        response = await summary_model.generate_content_async(prompt)
+        return response.text
+    except Exception as e:
+        logger.error(f"AI Summary Error: {e}")
+        return f"Failed to generate summary: {str(e)}"
